@@ -21,8 +21,10 @@ export function ShareModal({ documentId, onClose }: ShareModalProps) {
   const [busy, setBusy] = useState(false);
   const [revokingId, setRevokingId] = useState<string | null>(null);
 
-  async function loadShares() {
-    setShares(await api.listShares(documentId));
+  async function loadShares(): Promise<ShareWithUser[]> {
+    const freshShares = await api.listShares(documentId);
+    setShares(freshShares);
+    return freshShares;
   }
 
   useEffect(() => {
@@ -45,9 +47,10 @@ export function ShareModal({ documentId, onClose }: ShareModalProps) {
     setBusy(true);
     try {
       await api.createShare(documentId, { email, permission });
-      await loadShares();
-      const nextCandidate = candidates.find((u) => u.email !== email);
-      setEmail(nextCandidate?.email ?? "");
+      const freshShares = await loadShares();
+      const freshSharedIds = new Set(freshShares.map((s) => s.user_id));
+      const freshCandidates = users.filter((u) => u.id !== user?.id && !freshSharedIds.has(u.id));
+      setEmail(freshCandidates[0]?.email ?? "");
     } catch (e) {
       toast.error((e as Error).message);
     } finally {
@@ -59,7 +62,12 @@ export function ShareModal({ documentId, onClose }: ShareModalProps) {
     setRevokingId(userId);
     try {
       await api.revokeShare(documentId, userId);
-      await loadShares();
+      const freshShares = await loadShares();
+      const freshSharedIds = new Set(freshShares.map((s) => s.user_id));
+      const freshCandidates = users.filter((u) => u.id !== user?.id && !freshSharedIds.has(u.id));
+      if (!freshCandidates.some((u) => u.email === email)) {
+        setEmail(freshCandidates[0]?.email ?? "");
+      }
     } catch (e) {
       toast.error((e as Error).message);
     } finally {
