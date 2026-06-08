@@ -3,15 +3,7 @@ import { useNavigate } from "react-router-dom";
 import type { User } from "@docflow/shared";
 import { api } from "../api/client";
 import { useUser } from "../auth/UserContext";
-
-function initials(name: string): string {
-  return name
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part[0])
-    .join("");
-}
+import { initials } from "../lib/initials";
 
 export function Login() {
   const { user, login } = useUser();

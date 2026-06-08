@@ -4,9 +4,8 @@ Guidance for working in this repository (read this first).
 
 ## Project overview
 
-**DocFlow** is a small full-stack collaborative document editor — a lightweight,
-Google-Docs-style tool built for a technical exam. It demonstrates four core
-capabilities:
+**DocFlow** is a full-stack collaborative document editor — a lightweight, Google-Docs-style
+tool built for a technical exam. It demonstrates four core capabilities:
 
 1. **Document creation & rich-text editing** — create, rename, edit, save, and reopen
    documents with bold, italic, underline, headings, and bulleted/numbered lists.
@@ -31,37 +30,142 @@ capabilities:
 ```
 .
 ├── apps/
-│   ├── api/        # Express + TS backend (port 4000)
-│   └── web/        # React + TS frontend (Vite, port 5173)
+│   ├── api/                    # Express + TS backend (port 4000)
+│   │   └── src/
+│   │       ├── index.ts        # Entry — creates the app and listens
+│   │       ├── app.ts          # Builds the Express app (importable for tests)
+│   │       ├── supabase.ts     # Single Supabase service-role client
+│   │       ├── middleware/
+│   │       │   ├── auth.ts            # requireUser — reads x-user-id, attaches req.user
+│   │       │   └── documentAccess.ts  # requireAccess(level) — authorizes :id, attaches req.access
+│   │       ├── lib/            # Business logic + data access (no Express types)
+│   │       │   ├── access.ts   # getDocumentAccess, canWrite
+│   │       │   ├── documents.ts# document row queries (list/insert/update/delete/detail)
+│   │       │   ├── shares.ts   # share row queries
+│   │       │   ├── users.ts    # user row queries
+│   │       │   └── parseFile.ts# .txt / .md / .docx → TipTap HTML
+│   │       └── routes/         # HTTP layer only (parse → authorize → call lib → respond)
+│   │           ├── documents.ts# also nests sharesRouter under /:id/shares
+│   │           ├── shares.ts
+│   │           └── users.ts
+│   └── web/                    # React + TS frontend (Vite, port 5173)
+│       └── src/
+│           ├── main.tsx        # Entry — React Router root
+│           ├── App.tsx         # Shell — routes + header
+│           ├── api/
+│           │   └── client.ts   # Single typed fetch wrapper (all endpoints)
+│           ├── auth/
+│           │   └── UserContext.tsx  # Login state + localStorage sync
+│           ├── hooks/          # Data-fetching hooks (one per resource)
+│           │   ├── useDocuments.ts  # list, create, upload, delete
+│           │   └── useDocument.ts   # single doc, save, share ops
+│           ├── pages/          # Route-level components (thin — delegate to hooks + components)
+│           │   ├── Login.tsx
+│           │   ├── Dashboard.tsx
+│           │   └── DocumentPage.tsx
+│           ├── components/     # Reusable, props-only UI pieces
+│           │   ├── Editor.tsx
+│           │   ├── Toolbar.tsx
+│           │   └── ShareModal.tsx
+│           ├── lib/            # Pure helpers with no React dependency
+│           │   ├── fontSize.ts # TipTap font-size extension
+│           │   ├── initials.ts # name → up-to-two-letter initials
+│           │   └── formatDate.ts
+│           └── styles.css      # Global stylesheet
 ├── packages/
-│   └── shared/     # Shared TypeScript types (no runtime; import with `import type`)
+│   └── shared/
+│       └── src/index.ts        # Shared TS types only — import with `import type`
 ├── supabase/
-│   └── schema.sql  # DB schema + seed users — run in the Supabase SQL editor
-├── package.json    # workspaces + root scripts (`npm run dev` runs both apps)
-└── README.md       # setup + run instructions
+│   └── schema.sql              # DB schema + seed users — run in Supabase SQL editor
+├── package.json                # Workspaces + root scripts
+└── README.md                   # Setup & run instructions
 ```
 
-## Architecture & conventions
+## Architecture principles
 
-- **Auth is intentionally lightweight.** Users are seeded in the DB. The frontend
-  "logs in" by looking a user up by email and storing it in `localStorage`, then sends
-  the user id in an `x-user-id` header on every request. The backend's `requireUser`
-  middleware ([apps/api/src/middleware/auth.ts](apps/api/src/middleware/auth.ts)) loads
-  that user. No passwords/tokens — this keeps scope small for the exam.
-- **All access control lives in the API layer.** The backend uses the Supabase
-  **service role key** (server-side only — never sent to the browser) and bypasses RLS.
-  RLS is intentionally left off. Access checks live in
-  [apps/api/src/lib/access.ts](apps/api/src/lib/access.ts) (`getDocumentAccess`,
-  `canWrite`) and are applied in each route.
-- **The frontend never talks to Supabase directly.** It calls the Express API via the
-  Vite dev proxy (`/api` → `http://localhost:4000`). The single API client is
-  [apps/web/src/api/client.ts](apps/web/src/api/client.ts).
-- **Document content is stored as TipTap HTML** in the `documents.content` column.
-  Uploaded files are parsed to HTML server-side
-  ([apps/api/src/lib/parseFile.ts](apps/api/src/lib/parseFile.ts)) and the raw file is
-  not persisted.
-- **Shared types** live in `@docflow/shared` and are imported with `import type` so they
-  are erased at build time (no bundling of the workspace package needed).
+These principles are non-negotiable for every change made in this repo.
+
+### 1. Strict layering — each layer has one job
+
+**Backend layers (top to bottom):**
+
+```
+routes/      HTTP boundary — parse req, authorize, call lib, send res. No supabase.from(…) calls.
+lib/         Business logic + data access — the only modules that call supabase.from(…).
+             access.ts = authorization; documents/shares/users.ts = row queries; parseFile.ts = pure.
+supabase.ts  The shared service-role client instance.
+```
+
+A route handler should read like a script: validate → authorize → act → respond. All substance lives in `lib/`. Authorization for `:id` routes is done by the `requireAccess(level)` middleware, which attaches `req.access`.
+
+**Frontend layers:**
+
+```
+pages/       Route owner — composes hooks + components. Holds no inline fetch or business logic.
+hooks/       Data layer — owns loading/error state, calls api/client.ts, exposes typed state + actions.
+components/  Pure UI — accepts props, emits events. Never calls api/client.ts directly.
+lib/         Pure helpers — no React imports.
+api/client.ts  Network boundary — one method per endpoint, attaches auth header.
+```
+
+A page component should be nearly all JSX. A hook should contain no JSX.
+
+### 2. Single responsibility per file
+
+Each module does one thing and names it clearly:
+- `access.ts` — document permission logic only
+- `parseFile.ts` — file-to-HTML conversion only
+- `useDocuments.ts` — document list data only
+- `useDocument.ts` — single document data + mutation only
+
+When a file starts doing two unrelated things, split it.
+
+### 3. Centralized access control — never duplicate permission checks
+
+All document access logic lives in [apps/api/src/lib/access.ts](apps/api/src/lib/access.ts).
+
+```ts
+getDocumentAccess(documentId, userId)  // → { document, accessLevel } | null
+canWrite(accessLevel)                  // → boolean
+```
+
+Every route that touches a document calls `getDocumentAccess` first. No route may
+re-implement ownership or share checks inline.
+
+### 4. The frontend never talks to Supabase
+
+All data access goes through the Express API. The Vite dev proxy (`/api` → `http://localhost:4000`)
+makes this transparent. The single API client is [apps/web/src/api/client.ts](apps/web/src/api/client.ts).
+Do not add a Supabase client to the frontend.
+
+### 5. Shared types are the contract between frontend and backend
+
+All request/response shapes live in [packages/shared/src/index.ts](packages/shared/src/index.ts).
+When adding or changing an endpoint, update the shared types first, then implement both sides.
+Always use `import type` so the package has no runtime footprint.
+
+### 6. Hooks own all async state on the frontend
+
+Data fetching, loading flags, and error state belong in hooks inside `src/hooks/`, not
+in page components. A page calls a hook and passes the result into components. This keeps
+pages readable and makes data logic independently testable.
+
+### 7. Components are props-only
+
+UI components in `src/components/` must not call `api/client.ts` or read from `UserContext`
+(except `App.tsx` and page components which are explicitly allowed to). Pass data down as props
+and surface user actions via callback props. This makes components easy to render in isolation.
+
+## Auth model
+
+Auth is intentionally lightweight (exam scope — no passwords):
+
+- Users are seeded in the DB. The frontend "logs in" by looking up a user by email and
+  storing the user object in `localStorage` under the key `docflow.user`.
+- Every API request carries an `x-user-id` header.
+- [apps/api/src/middleware/auth.ts](apps/api/src/middleware/auth.ts) reads that header,
+  loads the user from the DB, and attaches it to `req.user`. All authenticated routes
+  apply this middleware.
 
 ## Common commands
 
@@ -72,23 +176,37 @@ npm run dev:api      # API only
 npm run dev:web      # web only
 npm run typecheck    # type-check both apps
 npm run build        # production build of the web app
+npm test             # run Vitest suites for both apps
 ```
+
+## Testing
+
+Both apps use **Vitest** (`npm test` at the root, or `-w @docflow/api` / `-w @docflow/web`).
+- Backend: `lib/access.ts` and `lib/parseFile.ts` are unit-tested; route authorization is covered by
+  supertest tests in `apps/api/src/app.test.ts` (the Supabase client is mocked per-table — no live DB).
+  `app.ts` is split from `index.ts` so the app can be imported without binding a port.
+- Frontend: pure helpers (`lib/initials.ts`) and the `useDocument` autosave hook are tested with
+  jsdom + fake timers.
+- Pure logic (no DB/React) is the cheapest to test — prefer adding coverage there first.
 
 ## Environment
 
 - Copy `apps/api/.env.example` → `apps/api/.env` and fill in `SUPABASE_URL` and
   `SUPABASE_SERVICE_ROLE_KEY`. The API will refuse to start without them.
 - The web app needs no env vars in dev (it proxies `/api`).
+- The Supabase service-role key is server-side only — never expose it to the browser.
 
-## Conventions for changes
+## Conventions checklist
 
-- Keep all DB access on the server. Don't add a Supabase client to the frontend.
-- When adding an endpoint that touches a document, reuse `getDocumentAccess` /
-  `canWrite` rather than re-implementing permission checks.
-- Add/adjust shared request/response shapes in `packages/shared/src/index.ts` so both
-  sides stay in sync.
-- ESM throughout: backend imports use explicit `.js` extensions (e.g. `./supabase.js`)
-  because the API runs as ESM via `tsx`.
-- Supported upload types are `.txt`, `.md`, `.docx`. If you change this, update the
-  `accept` attribute in [apps/web/src/pages/Dashboard.tsx](apps/web/src/pages/Dashboard.tsx),
-  the parser in `parseFile.ts`, and the README.
+Before opening a PR, verify:
+
+- [ ] Route handlers contain no `supabase.from(…)` calls — queries live in `lib/`.
+- [ ] New document-touching routes authorize via `requireAccess(level)` (which uses `getDocumentAccess`).
+- [ ] New/changed endpoint shapes are defined in `packages/shared/src/index.ts`.
+- [ ] Frontend data fetching lives in a hook in `src/hooks/`, not in a page component.
+- [ ] New components accept props and emit callbacks — no direct API calls inside them.
+- [ ] Backend imports use explicit `.js` extensions (ESM via `tsx`), e.g. `./access.js`.
+- [ ] Supported upload types (`.txt`, `.md`, `.docx`) are consistent across: the `accept`
+      attribute in [apps/web/src/pages/Dashboard.tsx](apps/web/src/pages/Dashboard.tsx),
+      the parser in `parseFile.ts`, and the README.
+- [ ] `npm run typecheck` and `npm test` both pass.

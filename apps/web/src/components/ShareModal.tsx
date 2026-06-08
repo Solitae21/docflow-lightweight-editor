@@ -2,19 +2,11 @@ import { useEffect, useState } from "react";
 import type { Permission, ShareWithUser, User } from "@docflow/shared";
 import { api } from "../api/client";
 import { useUser } from "../auth/UserContext";
+import { initials } from "../lib/initials";
 
 interface ShareModalProps {
   documentId: string;
   onClose: () => void;
-}
-
-function initials(name: string): string {
-  return name
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part[0])
-    .join("");
 }
 
 export function ShareModal({ documentId, onClose }: ShareModalProps) {

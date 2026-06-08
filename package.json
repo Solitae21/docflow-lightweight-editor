@@ -12,7 +12,8 @@
     "dev:api": "npm run dev -w @docflow/api",
     "dev:web": "npm run dev -w @docflow/web",
     "build": "npm run build -w @docflow/web",
-    "typecheck": "npm run typecheck -w @docflow/api && npm run typecheck -w @docflow/web"
+    "typecheck": "npm run typecheck -w @docflow/api && npm run typecheck -w @docflow/web",
+    "test": "npm run test -w @docflow/api && npm run test -w @docflow/web"
   },
   "devDependencies": {
     "concurrently": "^9.1.0"

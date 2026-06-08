@@ -3,16 +3,8 @@ import { useUser } from "./auth/UserContext";
 import { Login } from "./pages/Login";
 import { Dashboard } from "./pages/Dashboard";
 import { DocumentPage } from "./pages/DocumentPage";
+import { initials } from "./lib/initials";
 import type { ReactNode } from "react";
-
-function initials(name: string): string {
-  return name
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part[0])
-    .join("");
-}
 
 function Header() {
   const { user, logout } = useUser();

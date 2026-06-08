@@ -1,77 +1,30 @@
-import { useEffect, useRef, useState } from "react";
+import { useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import type { DocumentListItem, DocumentsResponse } from "@docflow/shared";
-import { api } from "../api/client";
-
-function formatDate(iso: string): string {
-  return new Date(iso).toLocaleString(undefined, {
-    month: "short",
-    day: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-  });
-}
+import type { DocumentListItem } from "@docflow/shared";
+import { formatDate } from "../lib/formatDate";
+import { useDocuments } from "../hooks/useDocuments";
 
 export function Dashboard() {
   const navigate = useNavigate();
-  const [docs, setDocs] = useState<DocumentsResponse>({ owned: [], shared: [] });
-  const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [busy, setBusy] = useState(false);
+  const { docs, loading, busy, error, create, upload, remove } = useDocuments();
   const fileInput = useRef<HTMLInputElement>(null);
 
-  async function load() {
-    setLoading(true);
-    try {
-      setDocs(await api.listDocuments());
-    } catch (e) {
-      setError((e as Error).message);
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  useEffect(() => {
-    load();
-  }, []);
-
   async function handleNew() {
-    setBusy(true);
-    setError(null);
-    try {
-      const doc = await api.createDocument();
-      navigate(`/documents/${doc.id}`);
-    } catch (e) {
-      setError((e as Error).message);
-      setBusy(false);
-    }
+    const id = await create();
+    if (id) navigate(`/documents/${id}`);
   }
 
   async function handleUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
-    setBusy(true);
-    setError(null);
-    try {
-      const doc = await api.uploadDocument(file);
-      navigate(`/documents/${doc.id}`);
-    } catch (err) {
-      setError((err as Error).message);
-      setBusy(false);
-    } finally {
-      if (fileInput.current) fileInput.current.value = "";
-    }
+    const id = await upload(file);
+    if (fileInput.current) fileInput.current.value = "";
+    if (id) navigate(`/documents/${id}`);
   }
 
-  async function handleDelete(id: string, title: string) {
+  function handleDelete(id: string, title: string) {
     if (!confirm(`Delete "${title}"? This cannot be undone.`)) return;
-    setError(null);
-    try {
-      await api.deleteDocument(id);
-      await load();
-    } catch (e) {
-      setError((e as Error).message);
-    }
+    void remove(id);
   }
 
   function renderRow(doc: DocumentListItem, owned: boolean) {

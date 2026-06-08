@@ -8,7 +8,8 @@ const ALLOWED_FONT_SIZES_PX = [12, 14, 16, 18, 24, 32];
 // The editor's default body size; runs that snap to this are left span-free.
 const DEFAULT_FONT_SIZE_PX = 16;
 
-function snapFontSizePx(pt: number): number {
+// Exported for unit tests.
+export function snapFontSizePx(pt: number): number {
   const px = Math.round(pt * (4 / 3)); // 1pt = 4/3px at 96dpi
   return ALLOWED_FONT_SIZES_PX.reduce((best, size) =>
     Math.abs(size - px) < Math.abs(best - px) ? size : best
@@ -53,7 +54,8 @@ const DOCX_STYLE_MAP = [
 // format set. These regexes deliberately operate on mammoth's own predictable markup,
 // not arbitrary user HTML, so the usual "don't parse HTML with regex" caveat doesn't
 // apply here.
-function sanitizeDocxHtml(html: string): string {
+// Exported for unit tests.
+export function sanitizeDocxHtml(html: string): string {
   return (
     html
       // our font-size class -> the inline style the fontSize extension reads
