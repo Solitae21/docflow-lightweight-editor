@@ -260,14 +260,30 @@ See [`supabase/schema.sql`](supabase/schema.sql) for the full definition.
 
 ## AI workflow
 
-**Claude Code** (Anthropic's CLI agent) was used as a development assistant throughout this project. The collaboration followed a consistent pattern:
+### Tools used
 
-- **Architecture & scaffolding** — the monorepo layout, strict layering rules (routes → lib → supabase, pages → hooks → components), and shared-types contract were designed upfront with Claude's input, then enforced as non-negotiable conventions in `CLAUDE.md`.
-- **Feature implementation** — iterative feature work (document CRUD, file upload parsing, access-control middleware, sharing flow, toast/error-boundary system) was implemented with Claude generating code inside the established layer boundaries.
-- **Incremental refinement** — UI polish (Spinner, Toolbar reordering, DOCX font-size normalization, email-selection logic in ShareModal) was handled in short focused sessions, each scoped to a single concern.
-- **Documentation** — `CLAUDE.md`, inline comments, and this README were written or expanded with Claude's help, with the human providing factual grounding (actual file paths, commit history, real design decisions).
+**Claude Code** (Anthropic's CLI agent, VS Code extension) was the sole AI tool used throughout the project.
 
-The key working principle: **Claude wrote code inside constraints the human set**, rather than making architecture decisions independently. The `CLAUDE.md` file in the repo root captures those constraints so they are enforced consistently across every session.
+### Where AI materially sped up the work
+
+- **Monorepo scaffolding** — generating the initial `package.json` workspaces config, `tsconfig.json` files, and Vite/Vitest configs across three packages was instant instead of a 30-minute lookup-and-wire exercise.
+- **Repetitive but correctness-sensitive code** — the Express middleware (`requireUser`, `requireAccess`), all Supabase query functions in `lib/`, and the shared-types contract in `packages/shared` were generated quickly once the data model was fixed. These are tedious to write but easy to verify.
+- **DOCX parsing edge cases** — the font-size snapping logic (mapping arbitrary Word point sizes to the toolbar's six sizes) and heading clamping (H3–H6 → H2) in `lib/parseFile.ts` would have taken significant trial-and-error with mammoth's API; Claude produced a working first draft.
+- **Test suite** — supertest route authorization tests and Vitest unit tests for `lib/access.ts`, `lib/parseFile.ts`, `useDocument` autosave, and `lib/initials.ts` were generated from the implementation, saving the bulk of the test-writing time.
+
+### What AI-generated output was changed or rejected
+
+- **Layer violations** — early route handlers contained inline `supabase.from(…)` calls. These were rejected and rewritten to delegate to `lib/` functions. The strict layering rule in `CLAUDE.md` was added specifically to prevent this from recurring.
+- **ShareModal email-selection logic** — the first version pre-selected the first user in the list regardless of existing shares, causing the dropdown to silently re-share an already-shared user. The `loadShares` function and selection state were reworked to filter out already-shared users and default to the first *eligible* user.
+- **Toolbar button order** — the generated order placed numbered lists before bulleted lists, which felt backwards against convention. The buttons were manually reordered.
+- **Over-engineered error handling** — an early draft of the API routes included nested try/catch with bespoke error classes. This was simplified to flat handlers that let a single Express error middleware catch unexpected throws, keeping route code readable.
+
+### How correctness, UX quality, and reliability were verified
+
+- **Type-checking** — `npm run typecheck` was run after every non-trivial change; TypeScript caught most contract mismatches between frontend and backend early.
+- **Test suite** — `npm test` covers the access-control logic, file parsing, route authorization (real HTTP via supertest with a mocked Supabase client), autosave debounce behavior, and pure helpers.
+- **Manual walkthrough** — the full usage walkthrough in this README (create → format → upload → share → switch users → verify read-only) was stepped through after each feature landed to confirm end-to-end behavior including edge cases: sharing with the same user twice (upsert), uploading an unsupported file type, opening a view-only document in the editor.
+- **Architectural review** — each PR-equivalent commit was checked against the conventions checklist in `CLAUDE.md` before being committed: no `supabase.from(…)` in routes, access control always via `requireAccess`, new endpoint shapes defined in `packages/shared` first.
 
 ---
 
