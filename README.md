@@ -258,6 +258,19 @@ See [`supabase/schema.sql`](supabase/schema.sql) for the full definition.
 
 ---
 
+## AI workflow
+
+**Claude Code** (Anthropic's CLI agent) was used as a development assistant throughout this project. The collaboration followed a consistent pattern:
+
+- **Architecture & scaffolding** — the monorepo layout, strict layering rules (routes → lib → supabase, pages → hooks → components), and shared-types contract were designed upfront with Claude's input, then enforced as non-negotiable conventions in `CLAUDE.md`.
+- **Feature implementation** — iterative feature work (document CRUD, file upload parsing, access-control middleware, sharing flow, toast/error-boundary system) was implemented with Claude generating code inside the established layer boundaries.
+- **Incremental refinement** — UI polish (Spinner, Toolbar reordering, DOCX font-size normalization, email-selection logic in ShareModal) was handled in short focused sessions, each scoped to a single concern.
+- **Documentation** — `CLAUDE.md`, inline comments, and this README were written or expanded with Claude's help, with the human providing factual grounding (actual file paths, commit history, real design decisions).
+
+The key working principle: **Claude wrote code inside constraints the human set**, rather than making architecture decisions independently. The `CLAUDE.md` file in the repo root captures those constraints so they are enforced consistently across every session.
+
+---
+
 ## Notes, scope & trade-offs
 
 - **Auth** is deliberately mocked (seeded users, no passwords) to keep focus on the core
