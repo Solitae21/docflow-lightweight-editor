@@ -64,20 +64,6 @@ export function Toolbar({ editor }: ToolbarProps) {
         () => editor.chain().focus().setParagraph().run(),
         "Normal text"
       )}
-      <span className="sep" />
-      {btn(
-        "• List",
-        editor.isActive("bulletList"),
-        () => editor.chain().focus().toggleBulletList().run(),
-        "Bulleted list"
-      )}
-      {btn(
-        "1. List",
-        editor.isActive("orderedList"),
-        () => editor.chain().focus().toggleOrderedList().run(),
-        "Numbered list"
-      )}
-      <span className="sep" />
       <select
         className="toolbar-select"
         title="Text size"
@@ -96,6 +82,19 @@ export function Toolbar({ editor }: ToolbarProps) {
           </option>
         ))}
       </select>
+      <span className="sep" />
+      {btn(
+        "• List",
+        editor.isActive("bulletList"),
+        () => editor.chain().focus().toggleBulletList().run(),
+        "Bulleted list"
+      )}
+      {btn(
+        "1. List",
+        editor.isActive("orderedList"),
+        () => editor.chain().focus().toggleOrderedList().run(),
+        "Numbered list"
+      )}
     </div>
   );
 }
