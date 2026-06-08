@@ -34,9 +34,16 @@ and **Supabase / Postgres** (database), organized as an **npm-workspaces monorep
 
 ---
 
-## Setup
+## Local Setup
 
-### 1. Install dependencies
+### 1. Clone the repository
+
+```bash
+git clone <repo-url>
+cd docflow
+```
+
+### 2. Install dependencies
 
 From the repository root:
 
@@ -44,9 +51,9 @@ From the repository root:
 npm install
 ```
 
-This installs all workspaces (`apps/api`, `apps/web`, `packages/shared`).
+This installs all three workspaces (`apps/api`, `apps/web`, `packages/shared`) in one step.
 
-### 2. Create the database schema
+### 3. Create the database schema
 
 In the Supabase dashboard, open **SQL Editor → New query**, paste the contents of
 [`supabase/schema.sql`](supabase/schema.sql), and **Run**. This creates the `users`,
@@ -60,7 +67,7 @@ In the Supabase dashboard, open **SQL Editor → New query**, paste the contents
 
 > The script drops the DocFlow tables first, so it is safe to re-run to reset state.
 
-### 3. Configure the backend environment
+### 4. Configure the backend environment
 
 Copy the example env file and fill in your Supabase credentials:
 
@@ -68,9 +75,9 @@ Copy the example env file and fill in your Supabase credentials:
 cp apps/api/.env.example apps/api/.env
 ```
 
-Set the values (from **Supabase → Project Settings → API**):
+Open `apps/api/.env` and set the two required values (found in **Supabase → Project Settings → API**):
 
-```
+```env
 SUPABASE_URL=https://your-project-ref.supabase.co
 SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
 PORT=4000
@@ -79,18 +86,105 @@ PORT=4000
 > Use the **service role** key. It is used only on the server and is never exposed to
 > the browser. The frontend needs no environment variables in development.
 
-### 4. Run
+### 5. Start the development servers
 
 ```bash
 npm run dev
 ```
 
-This starts:
+This starts both servers concurrently:
 
-- the API at **http://localhost:4000**
-- the web app at **http://localhost:5173**
+| Server  | URL                         |
+| ------- | --------------------------- |
+| API     | http://localhost:4000       |
+| Web app | http://localhost:5173       |
 
 Open **http://localhost:5173** and sign in by picking a seeded account.
+
+---
+
+## Project Structure
+
+```
+.
+├── apps/
+│   ├── api/                          # Express + TypeScript backend (port 4000)
+│   │   └── src/
+│   │       ├── index.ts              # Entry point — creates the app and listens
+│   │       ├── app.ts                # Builds the Express app (importable for tests)
+│   │       ├── app.test.ts           # Supertest route authorization tests
+│   │       ├── supabase.ts           # Single Supabase service-role client
+│   │       ├── middleware/
+│   │       │   ├── auth.ts           # requireUser — reads x-user-id, attaches req.user
+│   │       │   └── documentAccess.ts # requireAccess(level) — authorizes :id routes
+│   │       ├── lib/                  # Business logic + data access (no Express types)
+│   │       │   ├── access.ts         # getDocumentAccess, canWrite — all permission logic
+│   │       │   ├── access.test.ts
+│   │       │   ├── documents.ts      # Document row queries (list/insert/update/delete)
+│   │       │   ├── shares.ts         # Share row queries
+│   │       │   ├── users.ts          # User row queries
+│   │       │   ├── parseFile.ts      # .txt / .md / .docx → TipTap HTML
+│   │       │   └── parseFile.test.ts
+│   │       └── routes/               # HTTP layer only (parse → authorize → call lib → respond)
+│   │           ├── documents.ts      # Also nests sharesRouter under /:id/shares
+│   │           ├── shares.ts
+│   │           └── users.ts
+│   │
+│   └── web/                          # React + TypeScript frontend (Vite, port 5173)
+│       └── src/
+│           ├── main.tsx              # Entry point — React Router root
+│           ├── App.tsx               # Shell — routes + header
+│           ├── api/
+│           │   └── client.ts         # Single typed fetch wrapper (all endpoints)
+│           ├── auth/
+│           │   └── UserContext.tsx   # Login state + localStorage sync
+│           ├── hooks/                # Data-fetching hooks (one per resource)
+│           │   ├── useDocuments.ts   # Document list: create, upload, delete
+│           │   ├── useDocument.ts    # Single document: save, share operations
+│           │   └── useDocument.test.ts
+│           ├── pages/                # Route-level components (thin — delegate to hooks)
+│           │   ├── Login.tsx
+│           │   ├── Dashboard.tsx
+│           │   ├── DocumentPage.tsx
+│           │   └── NotFoundPage.tsx
+│           ├── components/           # Reusable, props-only UI pieces
+│           │   ├── Editor.tsx
+│           │   ├── Toolbar.tsx
+│           │   ├── ShareModal.tsx
+│           │   ├── Spinner.tsx
+│           │   ├── Toaster.tsx
+│           │   └── ErrorBoundary.tsx
+│           ├── toast/
+│           │   └── ToastContext.tsx  # Global toast notification context
+│           ├── lib/                  # Pure helpers (no React dependency)
+│           │   ├── fontSize.ts       # TipTap font-size extension
+│           │   ├── initials.ts       # name → up-to-two-letter initials
+│           │   ├── initials.test.ts
+│           │   └── formatDate.ts
+│           └── styles.css            # Global stylesheet
+│
+├── packages/
+│   └── shared/
+│       └── src/
+│           └── index.ts              # Shared TypeScript types (import type only)
+│
+├── supabase/
+│   └── schema.sql                    # DB schema + seed users — run in Supabase SQL editor
+│
+├── package.json                      # Workspaces root + shared scripts
+└── vercel.json                       # Vercel deployment config
+```
+
+### Key architecture boundaries
+
+```
+Backend:  routes/ → lib/ → supabase.ts      (never skip a layer)
+Frontend: pages/  → hooks/ → api/client.ts  (components are props-only)
+```
+
+- **`lib/`** is the only place that calls `supabase.from(…)`.
+- **`hooks/`** is the only place that calls `api/client.ts`.
+- **`components/`** never imports from `api/` or `UserContext`.
 
 ---
 
@@ -160,6 +254,7 @@ See [`supabase/schema.sql`](supabase/schema.sql) for the full definition.
 | `npm run dev:web`   | Run the web app only                      |
 | `npm run typecheck` | Type-check both apps                      |
 | `npm run build`     | Production build of the web app           |
+| `npm test`          | Run Vitest suites for both apps           |
 
 ---
 
@@ -171,5 +266,6 @@ See [`supabase/schema.sql`](supabase/schema.sql) for the full definition.
   to Supabase Auth + RLS policies.
 - Uploaded raw files are parsed and discarded (not stored), since the product goal is an
   *editable document*, not file storage.
-- No automated test suite within the exam time budget; verification is manual via the
-  walkthrough above.
+- A targeted test suite covers the critical logic: `lib/access.ts`, `lib/parseFile.ts`,
+  route authorization (supertest), the `useDocument` autosave hook, and pure helpers.
+  Run it with `npm test`.
