@@ -77,24 +77,32 @@ export function Dashboard() {
   function renderRow(doc: DocumentListItem, owned: boolean) {
     return (
       <div className="doc-row" key={doc.id}>
-        <div>
-          <div className="doc-title">
-            {doc.title}
-            {!owned && (
-              <span className={`badge ${doc.accessLevel === "view" ? "badge-view" : ""}`}>
-                {doc.accessLevel}
-              </span>
-            )}
+        <div className="doc-head">
+          <span className="doc-icon" aria-hidden="true" />
+          <div>
+            <div className="doc-title">{doc.title}</div>
+            <div className="doc-meta">Updated {formatDate(doc.updated_at)}</div>
           </div>
-          <div className="doc-meta">Updated {formatDate(doc.updated_at)}</div>
+          {!owned && (
+            <span
+              className={`badge ${doc.accessLevel === "view" ? "badge-view" : ""}`}
+              style={{ marginLeft: "auto" }}
+            >
+              {doc.accessLevel}
+            </span>
+          )}
         </div>
         <div className="row-actions">
-          <button className="btn btn-sm" onClick={() => navigate(`/documents/${doc.id}`)}>
+          <button
+            className="btn btn-sm btn-primary"
+            onClick={() => navigate(`/documents/${doc.id}`)}
+          >
             Open
           </button>
           {owned && (
             <button
               className="btn btn-sm btn-danger"
+              title="Delete document"
               onClick={() => handleDelete(doc.id, doc.title)}
             >
               Delete
@@ -107,29 +115,34 @@ export function Dashboard() {
 
   return (
     <div className="container">
-      <div className="dashboard-actions">
-        <button className="btn btn-primary" onClick={handleNew} disabled={busy}>
-          + New Document
-        </button>
-        <button
-          className="btn"
-          onClick={() => fileInput.current?.click()}
-          disabled={busy}
-        >
-          ⬆ Upload File
-        </button>
-        <input
-          ref={fileInput}
-          type="file"
-          accept=".txt,.md,.markdown,.docx"
-          style={{ display: "none" }}
-          onChange={handleUpload}
-        />
+      <div className="dashboard-head">
+        <div>
+          <h1>Your documents</h1>
+          <p className="sub">
+            Create, upload, and share. Uploads support{" "}
+            <strong>.txt</strong>, <strong>.md</strong>, and <strong>.docx</strong>.
+          </p>
+        </div>
+        <div className="dashboard-actions">
+          <button className="btn btn-primary" onClick={handleNew} disabled={busy}>
+            ✎ New document
+          </button>
+          <button
+            className="btn"
+            onClick={() => fileInput.current?.click()}
+            disabled={busy}
+          >
+            ↑ Upload
+          </button>
+          <input
+            ref={fileInput}
+            type="file"
+            accept=".txt,.md,.markdown,.docx"
+            style={{ display: "none" }}
+            onChange={handleUpload}
+          />
+        </div>
       </div>
-      <p className="doc-meta" style={{ marginTop: "-12px", marginBottom: 24 }}>
-        Supported uploads: <strong>.txt</strong>, <strong>.md</strong>, <strong>.docx</strong> —
-        converted into a new editable document.
-      </p>
 
       {error && <div className="error-msg">{error}</div>}
       {loading ? (
@@ -137,7 +150,9 @@ export function Dashboard() {
       ) : (
         <>
           <section className="doc-section">
-            <h2>My Documents</h2>
+            <h2>
+              My documents <span className="count">{docs.owned.length}</span>
+            </h2>
             <div className="doc-list">
               {docs.owned.length === 0 ? (
                 <div className="empty">No documents yet. Create or upload one above.</div>
@@ -148,7 +163,9 @@ export function Dashboard() {
           </section>
 
           <section className="doc-section">
-            <h2>Shared with me</h2>
+            <h2>
+              Shared with me <span className="count">{docs.shared.length}</span>
+            </h2>
             <div className="doc-list">
               {docs.shared.length === 0 ? (
                 <div className="empty">Nothing shared with you yet.</div>

@@ -4,6 +4,15 @@ import type { User } from "@docflow/shared";
 import { api } from "../api/client";
 import { useUser } from "../auth/UserContext";
 
+function initials(name: string): string {
+  return name
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0])
+    .join("");
+}
+
 export function Login() {
   const { user, login } = useUser();
   const navigate = useNavigate();
@@ -37,19 +46,32 @@ export function Login() {
 
   return (
     <div className="login-wrap">
-      <h1>DocFlow</h1>
-      <p>Pick a seeded account to sign in. (No password — demo auth.)</p>
+      <div className="login-eyebrow">DocFlow</div>
+      <h1>
+        A calm place
+        <br />
+        to <em>write</em> &amp; share.
+      </h1>
+      <p>Pick a seeded account to sign in — no password, this is demo auth.</p>
       {error && <div className="error-msg">{error}</div>}
       <div className="user-list">
         {users.map((u) => (
           <button
             key={u.id}
-            className="btn"
+            className="btn user-pick"
             disabled={busy}
             onClick={() => handleLogin(u.email)}
           >
-            <span>{u.name}</span>
-            <span className="email">{u.email}</span>
+            <span className="avatar" aria-hidden="true">
+              {initials(u.name)}
+            </span>
+            <span className="pick-text">
+              <span className="name">{u.name}</span>
+              <span className="email">{u.email}</span>
+            </span>
+            <span className="pick-arrow" aria-hidden="true">
+              →
+            </span>
           </button>
         ))}
         {users.length === 0 && !error && <div className="empty">Loading accounts…</div>}

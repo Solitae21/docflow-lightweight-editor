@@ -1,6 +1,7 @@
 import { EditorContent, useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Underline from "@tiptap/extension-underline";
+import Placeholder from "@tiptap/extension-placeholder";
 import { Toolbar } from "./Toolbar";
 
 interface EditorProps {
@@ -13,7 +14,11 @@ interface EditorProps {
 // Underline is added separately. Emits HTML on every change.
 export function Editor({ initialContent, editable, onChange }: EditorProps) {
   const editor = useEditor({
-    extensions: [StarterKit, Underline],
+    extensions: [
+      StarterKit,
+      Underline,
+      Placeholder.configure({ placeholder: "Start writing…" }),
+    ],
     content: initialContent,
     editable,
     onUpdate: ({ editor }) => onChange(editor.getHTML()),
@@ -22,7 +27,10 @@ export function Editor({ initialContent, editable, onChange }: EditorProps) {
   return (
     <div>
       {editable && <Toolbar editor={editor} />}
-      <div className="editor-surface" style={editable ? undefined : { borderRadius: 8 }}>
+      <div
+        className="editor-surface"
+        style={editable ? undefined : { borderRadius: "var(--radius)" }}
+      >
         <EditorContent editor={editor} />
       </div>
     </div>

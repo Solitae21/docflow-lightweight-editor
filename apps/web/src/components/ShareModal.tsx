@@ -8,6 +8,15 @@ interface ShareModalProps {
   onClose: () => void;
 }
 
+function initials(name: string): string {
+  return name
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0])
+    .join("");
+}
+
 export function ShareModal({ documentId, onClose }: ShareModalProps) {
   const { user } = useUser();
   const [users, setUsers] = useState<User[]>([]);
@@ -66,6 +75,7 @@ export function ShareModal({ documentId, onClose }: ShareModalProps) {
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal" onClick={(e) => e.stopPropagation()}>
         <h3>Share document</h3>
+        <p className="modal-sub">Give a teammate view or edit access.</p>
         {error && <div className="error-msg">{error}</div>}
 
         <label>Person</label>
@@ -102,10 +112,14 @@ export function ShareModal({ documentId, onClose }: ShareModalProps) {
 
         {shares.length > 0 && (
           <ul className="share-list">
+            <li className="share-head">People with access</li>
             {shares.map((s) => (
               <li key={s.id}>
-                <span>
-                  {s.user.name}{" "}
+                <span className="share-who">
+                  <span className="avatar avatar-ochre" aria-hidden="true">
+                    {initials(s.user.name)}
+                  </span>
+                  <span className="share-name">{s.user.name}</span>
                   <span className={`badge ${s.permission === "view" ? "badge-view" : ""}`}>
                     {s.permission}
                   </span>

@@ -110,8 +110,8 @@ export function DocumentPage() {
 
   return (
     <div className="container">
-      <Link to="/" className="btn btn-sm" style={{ marginBottom: 16, display: "inline-block" }}>
-        ← Back
+      <Link to="/" className="btn btn-sm btn-ghost editor-back">
+        ← All documents
       </Link>
 
       {error && <div className="error-msg">{error}</div>}
@@ -124,10 +124,15 @@ export function DocumentPage() {
           placeholder="Untitled document"
           onChange={(e) => handleTitleChange(e.target.value)}
         />
-        <span className="save-status">{canWrite ? statusLabel[status] : ""}</span>
+        {canWrite && (
+          <span className={`save-status is-${status}`}>
+            <span className="dot" />
+            {statusLabel[status]}
+          </span>
+        )}
         {isOwner && (
           <button className="btn btn-primary btn-sm" onClick={() => setShowShare(true)}>
-            Share
+            ⤳ Share
           </button>
         )}
       </div>

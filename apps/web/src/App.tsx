@@ -5,6 +5,15 @@ import { Dashboard } from "./pages/Dashboard";
 import { DocumentPage } from "./pages/DocumentPage";
 import type { ReactNode } from "react";
 
+function initials(name: string): string {
+  return name
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0])
+    .join("");
+}
+
 function Header() {
   const { user, logout } = useUser();
   const navigate = useNavigate();
@@ -12,14 +21,18 @@ function Header() {
   return (
     <header className="app-header">
       <div className="brand" onClick={() => navigate("/")} style={{ cursor: "pointer" }}>
-        📄 DocFlow
+        Doc<span className="brand-mark">Flow</span>
+        <span className="brand-dot">.</span>
       </div>
       <div className="user-box">
-        <span>
+        <span className="who">
           Signed in as <strong>{user.name}</strong>
         </span>
+        <span className="avatar" title={user.name}>
+          {initials(user.name)}
+        </span>
         <button
-          className="btn btn-sm"
+          className="btn btn-sm btn-ghost"
           onClick={() => {
             logout();
             navigate("/login");
