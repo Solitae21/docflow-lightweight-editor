@@ -4,6 +4,7 @@ import type { User } from "@docflow/shared";
 import { api } from "../api/client";
 import { useUser } from "../auth/UserContext";
 import { initials } from "../lib/initials";
+import { Spinner } from "../components/Spinner";
 
 export function Login() {
   const { user, login } = useUser();
@@ -62,7 +63,7 @@ export function Login() {
               <span className="email">{u.email}</span>
             </span>
             <span className="pick-arrow" aria-hidden="true">
-              →
+              {busy ? <Spinner /> : "→"}
             </span>
           </button>
         ))}

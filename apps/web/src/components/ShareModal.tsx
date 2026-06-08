@@ -4,6 +4,7 @@ import { api } from "../api/client";
 import { useUser } from "../auth/UserContext";
 import { initials } from "../lib/initials";
 import { useToast } from "../toast/ToastContext";
+import { Spinner } from "./Spinner";
 
 interface ShareModalProps {
   documentId: string;
@@ -18,6 +19,7 @@ export function ShareModal({ documentId, onClose }: ShareModalProps) {
   const [email, setEmail] = useState("");
   const [permission, setPermission] = useState<Permission>("edit");
   const [busy, setBusy] = useState(false);
+  const [revokingId, setRevokingId] = useState<string | null>(null);
 
   async function loadShares() {
     setShares(await api.listShares(documentId));
@@ -54,11 +56,14 @@ export function ShareModal({ documentId, onClose }: ShareModalProps) {
   }
 
   async function handleRevoke(userId: string) {
+    setRevokingId(userId);
     try {
       await api.revokeShare(documentId, userId);
       await loadShares();
     } catch (e) {
       toast.error((e as Error).message);
+    } finally {
+      setRevokingId(null);
     }
   }
 
@@ -96,7 +101,7 @@ export function ShareModal({ documentId, onClose }: ShareModalProps) {
             onClick={handleAdd}
             disabled={busy || !email || candidates.length === 0}
           >
-            Share
+            {busy && <Spinner />} Share
           </button>
         </div>
 
@@ -117,8 +122,9 @@ export function ShareModal({ documentId, onClose }: ShareModalProps) {
                 <button
                   className="btn btn-sm btn-danger"
                   onClick={() => handleRevoke(s.user_id)}
+                  disabled={!!revokingId}
                 >
-                  Remove
+                  {revokingId === s.user_id ? <Spinner /> : null} Remove
                 </button>
               </li>
             ))}

@@ -6,6 +6,7 @@ interface UseDocuments {
   docs: DocumentsResponse;
   loading: boolean; // initial / refresh load in flight
   busy: boolean; // a create or upload is in flight
+  deletingId: string | null; // id of the document currently being deleted
   error: string | null;
   reload: () => Promise<void>;
   create: () => Promise<string | null>; // resolves to the new document id (or null on failure)
@@ -21,6 +22,7 @@ export function useDocuments(): UseDocuments {
   const [docs, setDocs] = useState<DocumentsResponse>(EMPTY);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const reload = useCallback(async () => {
@@ -68,16 +70,19 @@ export function useDocuments(): UseDocuments {
 
   const remove = useCallback(
     async (id: string) => {
+      setDeletingId(id);
       setError(null);
       try {
         await api.deleteDocument(id);
         await reload();
       } catch (e) {
         setError((e as Error).message);
+      } finally {
+        setDeletingId(null);
       }
     },
     [reload]
   );
 
-  return { docs, loading, busy, error, reload, create, upload, remove };
+  return { docs, loading, busy, deletingId, error, reload, create, upload, remove };
 }

@@ -4,10 +4,11 @@ import type { DocumentListItem } from "@docflow/shared";
 import { formatDate } from "../lib/formatDate";
 import { useDocuments } from "../hooks/useDocuments";
 import { useToast } from "../toast/ToastContext";
+import { Spinner } from "../components/Spinner";
 
 export function Dashboard() {
   const navigate = useNavigate();
-  const { docs, loading, busy, error, create, upload, remove } = useDocuments();
+  const { docs, loading, busy, deletingId, error, create, upload, remove } = useDocuments();
   const fileInput = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   const lastToastedError = useRef<string | null>(null);
@@ -67,8 +68,9 @@ export function Dashboard() {
               className="btn btn-sm btn-danger"
               title="Delete document"
               onClick={() => handleDelete(doc.id, doc.title)}
+              disabled={!!deletingId}
             >
-              Delete
+              {deletingId === doc.id ? <Spinner /> : null} Delete
             </button>
           )}
         </div>
@@ -88,14 +90,14 @@ export function Dashboard() {
         </div>
         <div className="dashboard-actions">
           <button className="btn btn-primary" onClick={handleNew} disabled={busy}>
-            ✎ New document
+            {busy ? <Spinner /> : "✎"} New document
           </button>
           <button
             className="btn"
             onClick={() => fileInput.current?.click()}
             disabled={busy}
           >
-            ↑ Upload
+            {busy ? <Spinner /> : "↑"} Upload
           </button>
           <input
             ref={fileInput}

@@ -888,6 +888,20 @@ button {
 }
 
 /* ------------------------------------------------------------- Animations */
+/* ----------------------------------------------------------- Spinner */
+.spinner {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  animation: spin 0.7s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 @keyframes rise {
   from {
     opacity: 0;
