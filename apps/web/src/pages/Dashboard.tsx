@@ -1,13 +1,23 @@
-import { useRef } from "react";
+import { useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import type { DocumentListItem } from "@docflow/shared";
 import { formatDate } from "../lib/formatDate";
 import { useDocuments } from "../hooks/useDocuments";
+import { useToast } from "../toast/ToastContext";
 
 export function Dashboard() {
   const navigate = useNavigate();
   const { docs, loading, busy, error, create, upload, remove } = useDocuments();
   const fileInput = useRef<HTMLInputElement>(null);
+  const { toast } = useToast();
+  const lastToastedError = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (error && error !== lastToastedError.current) {
+      lastToastedError.current = error;
+      toast.error(error);
+    }
+  }, [error, toast]);
 
   async function handleNew() {
     const id = await create();
@@ -97,7 +107,6 @@ export function Dashboard() {
         </div>
       </div>
 
-      {error && <div className="error-msg">{error}</div>}
       {loading ? (
         <div className="loading">Loading documents…</div>
       ) : (

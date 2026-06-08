@@ -3,6 +3,8 @@ import { useUser } from "./auth/UserContext";
 import { Login } from "./pages/Login";
 import { Dashboard } from "./pages/Dashboard";
 import { DocumentPage } from "./pages/DocumentPage";
+import { NotFoundPage } from "./pages/NotFoundPage";
+import { ErrorBoundary } from "./components/ErrorBoundary";
 import { initials } from "./lib/initials";
 import type { ReactNode } from "react";
 
@@ -47,26 +49,28 @@ export function App() {
   return (
     <>
       <Header />
-      <Routes>
-        <Route path="/login" element={<Login />} />
-        <Route
-          path="/"
-          element={
-            <RequireAuth>
-              <Dashboard />
-            </RequireAuth>
-          }
-        />
-        <Route
-          path="/documents/:id"
-          element={
-            <RequireAuth>
-              <DocumentPage />
-            </RequireAuth>
-          }
-        />
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
+      <ErrorBoundary onReset={() => window.location.assign("/")}>
+        <Routes>
+          <Route path="/login" element={<Login />} />
+          <Route
+            path="/"
+            element={
+              <RequireAuth>
+                <Dashboard />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/documents/:id"
+            element={
+              <RequireAuth>
+                <DocumentPage />
+              </RequireAuth>
+            }
+          />
+          <Route path="*" element={<NotFoundPage />} />
+        </Routes>
+      </ErrorBoundary>
     </>
   );
 }

@@ -3,6 +3,7 @@ import type { Permission, ShareWithUser, User } from "@docflow/shared";
 import { api } from "../api/client";
 import { useUser } from "../auth/UserContext";
 import { initials } from "../lib/initials";
+import { useToast } from "../toast/ToastContext";
 
 interface ShareModalProps {
   documentId: string;
@@ -11,11 +12,11 @@ interface ShareModalProps {
 
 export function ShareModal({ documentId, onClose }: ShareModalProps) {
   const { user } = useUser();
+  const { toast } = useToast();
   const [users, setUsers] = useState<User[]>([]);
   const [shares, setShares] = useState<ShareWithUser[]>([]);
   const [email, setEmail] = useState("");
   const [permission, setPermission] = useState<Permission>("edit");
-  const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
   async function loadShares() {
@@ -31,7 +32,7 @@ export function ShareModal({ documentId, onClose }: ShareModalProps) {
         const firstOther = allUsers.find((u) => u.id !== user?.id);
         if (firstOther) setEmail(firstOther.email);
       })
-      .catch((e) => setError(e.message));
+      .catch((e: Error) => toast.error(e.message));
   }, [documentId, user?.id]);
 
   const sharedUserIds = new Set(shares.map((s) => s.user_id));
@@ -40,26 +41,24 @@ export function ShareModal({ documentId, onClose }: ShareModalProps) {
   async function handleAdd() {
     if (!email) return;
     setBusy(true);
-    setError(null);
     try {
       await api.createShare(documentId, { email, permission });
       await loadShares();
       const nextCandidate = candidates.find((u) => u.email !== email);
       setEmail(nextCandidate?.email ?? "");
     } catch (e) {
-      setError((e as Error).message);
+      toast.error((e as Error).message);
     } finally {
       setBusy(false);
     }
   }
 
   async function handleRevoke(userId: string) {
-    setError(null);
     try {
       await api.revokeShare(documentId, userId);
       await loadShares();
     } catch (e) {
-      setError((e as Error).message);
+      toast.error((e as Error).message);
     }
   }
 
@@ -68,7 +67,6 @@ export function ShareModal({ documentId, onClose }: ShareModalProps) {
       <div className="modal" onClick={(e) => e.stopPropagation()}>
         <h3>Share document</h3>
         <p className="modal-sub">Give a teammate view or edit access.</p>
-        {error && <div className="error-msg">{error}</div>}
 
         <label>Person</label>
         <select value={email} onChange={(e) => setEmail(e.target.value)}>

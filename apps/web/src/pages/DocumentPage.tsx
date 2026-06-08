@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { Editor } from "../components/Editor";
 import { ShareModal } from "../components/ShareModal";
 import { useDocument, type SaveStatus } from "../hooks/useDocument";
+import { useToast } from "../toast/ToastContext";
 
 export function DocumentPage() {
   const { id = "" } = useParams();
@@ -18,6 +19,15 @@ export function DocumentPage() {
     setTitle,
     setContent,
   } = useDocument(id);
+  const { toast } = useToast();
+  const lastToastedError = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (error && error !== lastToastedError.current) {
+      lastToastedError.current = error;
+      toast.error(error);
+    }
+  }, [error, toast]);
 
   if (loadError) {
     return (
@@ -44,8 +54,6 @@ export function DocumentPage() {
       <Link to="/" className="btn btn-sm btn-ghost editor-back">
         ← All documents
       </Link>
-
-      {error && <div className="error-msg">{error}</div>}
 
       <div className="editor-topbar">
         <input
