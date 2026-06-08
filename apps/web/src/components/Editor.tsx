@@ -2,6 +2,8 @@ import { EditorContent, useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Underline from "@tiptap/extension-underline";
 import Placeholder from "@tiptap/extension-placeholder";
+import TextStyle from "@tiptap/extension-text-style";
+import { FontSize } from "../lib/fontSize";
 import { Toolbar } from "./Toolbar";
 
 interface EditorProps {
@@ -16,6 +18,8 @@ export function Editor({ initialContent, editable, onChange }: EditorProps) {
   const editor = useEditor({
     extensions: [
       StarterKit,
+      TextStyle,
+      FontSize,
       Underline,
       Placeholder.configure({ placeholder: "Start writing…" }),
     ],

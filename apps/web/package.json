@@ -12,6 +12,7 @@
   "dependencies": {
     "@docflow/shared": "*",
     "@tiptap/extension-placeholder": "^2.27.2",
+    "@tiptap/extension-text-style": "^2.8.0",
     "@tiptap/extension-underline": "^2.8.0",
     "@tiptap/pm": "^2.8.0",
     "@tiptap/react": "^2.8.0",

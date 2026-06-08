@@ -8,7 +8,8 @@
       "Bash(find \"C:/Users/Hans Angelo/.claude\" -iname \"*.md\" -path \"*skill*\" 2>/dev/null | head -50; echo \"---PLUGINS---\"; find \"C:/Users/Hans Angelo/.claude\" -iname \"SKILL.md\" 2>/dev/null | head -50)",
       "Read(//c/Users/Hans Angelo/.claude/**)",
       "Bash(npm install *)",
-      "Bash(npm run *)"
+      "Bash(npm run *)",
+      "Bash(Select-Object -Last 15)"
     ]
   }
 }

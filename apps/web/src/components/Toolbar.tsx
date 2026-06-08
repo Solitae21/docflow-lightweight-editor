@@ -26,6 +26,10 @@ export function Toolbar({ editor }: ToolbarProps) {
     </button>
   );
 
+  // Available text sizes; "" represents the document's default ("Normal").
+  const sizes = ["12px", "14px", "16px", "18px", "24px", "32px"];
+  const currentSize: string = editor.getAttributes("textStyle").fontSize ?? "";
+
   return (
     <div className="toolbar">
       {btn("B", editor.isActive("bold"), () => editor.chain().focus().toggleBold().run(), "Bold")}
@@ -73,6 +77,25 @@ export function Toolbar({ editor }: ToolbarProps) {
         () => editor.chain().focus().toggleOrderedList().run(),
         "Numbered list"
       )}
+      <span className="sep" />
+      <select
+        className="toolbar-select"
+        title="Text size"
+        value={currentSize}
+        onMouseDown={(e) => e.stopPropagation()} // let the native dropdown open
+        onChange={(e) => {
+          const value = e.target.value;
+          if (value) editor.chain().focus().setFontSize(value).run();
+          else editor.chain().focus().unsetFontSize().run();
+        }}
+      >
+        <option value="">Normal</option>
+        {sizes.map((size) => (
+          <option key={size} value={size}>
+            {size.replace("px", "")}
+          </option>
+        ))}
+      </select>
     </div>
   );
 }
