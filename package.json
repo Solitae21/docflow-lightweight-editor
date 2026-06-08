@@ -1,0 +1,20 @@
+{
+  "name": "docflow",
+  "version": "1.0.0",
+  "private": true,
+  "description": "DocFlow — a lightweight collaborative document editor (rich-text editing, file upload, sharing, persistence).",
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "dev": "concurrently -n api,web -c blue,green \"npm run dev -w @docflow/api\" \"npm run dev -w @docflow/web\"",
+    "dev:api": "npm run dev -w @docflow/api",
+    "dev:web": "npm run dev -w @docflow/web",
+    "build": "npm run build -w @docflow/web",
+    "typecheck": "npm run typecheck -w @docflow/api && npm run typecheck -w @docflow/web"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.0"
+  }
+}

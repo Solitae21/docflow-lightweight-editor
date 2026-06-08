@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(npm install)",
+      "PowerShell(npm run typecheck)",
+      "PowerShell(npm run typecheck -w @docflow/api)",
+      "PowerShell(npm run start -w @docflow/api)"
+    ]
+  }
+}
